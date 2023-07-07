@@ -1,0 +1,6 @@
+M     = 1.989e30            # Mass of the sun (kg)
+G     = 6.67408e-11         # Gravitational constant (m^3 / kg / s^2)
+AU    = 1.495979e+11        # One astronomical unit (m)
+G_SC  = 1361                # Solar constant (W / m^2)
+c     = 3e8                 # Light speed (m / s)
+syear = 31558464            # Sideral year (s)
