@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -72,7 +73,11 @@ def main(args):
         return scatter1, scatter2, scatter3, last, foc, txt
     
     # Define the animation function
-    def animate(_):
+    def animate(frame_n):
+        if args.output_file is not None:
+            sys.stdout.write(f"\r{100 * (frame_n+1) / args.frames:.2f}%")
+            sys.stdout.flush()
+            
         simulator.iterate(args.timestep, accel)
         scatter1.set_offsets(simulator._points[-1000:-1])
         if len(simulator._points) > 1000:
@@ -94,6 +99,7 @@ def main(args):
     if args.output_file is not None:
         writervideo = animation.FFMpegWriter(fps=60, bitrate=12000)
         ani.save(args.output_file, writer=writervideo)
+        print()
     else:
         plt.show()
         plt.grid()
