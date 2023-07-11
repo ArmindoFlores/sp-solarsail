@@ -113,13 +113,6 @@ def velocity_at(theta, a, b, mu, angle=0, vector=True):
         return tangencial_vector(theta, a, b, angle) * v
     return v
 
-def runge_kutta_step(f, x, t, h):
-    k1 = h * f(t, x)
-    k2 = h * f(t + 0.5*h, x + 0.5*k1)
-    k3 = h * f(t + 0.5*h, x + 0.5*k2)
-    k4 = h * f(t + h, x + k3)
-    return x + (k1 + 2*k2 + 2*k3 + k4) / 6
-
 
 class OrbitalParameters:
     A_REQUIREMENTS = (
@@ -193,6 +186,7 @@ class OrbitSimulator:
         self._focus = initial_conditions.focus
         self._mu = initial_conditions.mu
         self._r = [orbit_equation(self._theta[-1], self._a[-1], self._e[-1])]
+        self._mechanical_energy = [np.sum(np.square(self._v[-1])) / 2 - self._mu / np.linalg.norm(self._r[-1])]
         self._points = [on_ellipse(self._theta[-1], self._focus, self._a[-1], self._b[-1])]
         self._time = [0]
         
@@ -211,48 +205,19 @@ class OrbitSimulator:
         self._accel = accel
         self.solver.integrate(self._time[-1]+ts)
         px, py, vx, vy = self.solver.y
+        point = np.array([px, py, 0])
+        r = point - np.array([*self._focus, 0])
+        r_mag = np.linalg.norm(r) 
+        vel = np.array([vx, vy, 0])
+        
+        h = np.cross(r, vel)
+        e = np.linalg.norm(np.cross(vel, h) / self._mu - r / r_mag)
+        mech_e = np.sum(np.square(vel)) / 2 - self._mu / r_mag
+        a = -self._mu / (2 * mech_e)
         
         self._time.append(self._time[-1]+ts)
-        self._v.append(np.array([vx, vy]))
-        self._points.append(np.array([px, py]))
-        
-    
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    import matplotlib.animation as animation
-    from constants import *
-    
-    initial_conditions = OrbitalParameters(MU_EARTH, 0, 0, a=6378+400, e=0.1, focus=np.array([0, 0]))
-    simulator = OrbitSimulator(initial_conditions)
-    ts = 1
-    
-    def accel(_, y):
-        point = np.array([y[0], y[1]])
-        e_r = point - initial_conditions.focus
-        e_r /= np.linalg.norm(e_r)
-        return e_r * 0.0005
-    
-    # Create a figure
-    fig = plt.figure()
-    ax = plt.axes(xlim=[-50000, 50000], ylim=[-50000, 50000])
-    # ax.axis("equal")
-    
-    # Initialize a scatter object for the plot
-    scatter = ax.scatter([], [], s=1, c="r")
-    last = ax.scatter([], [], s=2, c="k")
-    foc = ax.scatter(0, 0, s=4, c="b")
-    
-    def init():
-        return scatter, last, foc
-    
-    # Define the animation function
-    def animate(_):
-        simulator.iterate(ts, accel)
-        scatter.set_offsets(simulator._points[:-1])
-        last.set_offsets(simulator._points[-1])
-        return scatter, last, foc
-
-    # Create the animation
-    ani = animation.FuncAnimation(fig, animate, init_func=init, blit=True, interval=0)
-    plt.show()
-        
+        self._v.append(vel[:2])
+        self._points.append(point[:2])
+        self._a.append(a)
+        self._e.append(e)
+        self._mechanical_energy.append(mech_e)
