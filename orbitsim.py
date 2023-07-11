@@ -211,13 +211,23 @@ class OrbitSimulator:
         vel = np.array([vx, vy, 0])
         
         h = np.cross(r, vel)
-        e = np.linalg.norm(np.cross(vel, h) / self._mu - r / r_mag)
+        e_vec = np.cross(vel, h) / self._mu - r / r_mag
+        e = np.linalg.norm(e_vec)
         mech_e = np.sum(np.square(vel)) / 2 - self._mu / r_mag
         a = -self._mu / (2 * mech_e)
+        
+        if e > 1:
+            b = float("nan")
+        else:
+            b = a * np.sqrt(1 - e**2)
+        angle = np.arctan2(e_vec[1], e_vec[0])
         
         self._time.append(self._time[-1]+ts)
         self._v.append(vel[:2])
         self._points.append(point[:2])
         self._a.append(a)
         self._e.append(e)
+        self._b.append(b)
         self._mechanical_energy.append(mech_e)
+        self._center = self._focus - rotmat2d(angle) @ np.array([np.sqrt(a**2 - b**2), 0])
+        self._angle.append(angle)
