@@ -182,7 +182,7 @@ class OrbitSimulator:
         self._v = [initial_conditions.v]
         self._theta = [initial_conditions.theta]
         self._angle = [initial_conditions.angle]
-        self._center = initial_conditions.center
+        self._center = [initial_conditions.center]
         self._focus = initial_conditions.focus
         self._mu = initial_conditions.mu
         self._r = [orbit_equation(self._theta[-1], self._a[-1], self._e[-1])]
@@ -229,5 +229,5 @@ class OrbitSimulator:
         self._e.append(e)
         self._b.append(b)
         self._mechanical_energy.append(mech_e)
-        self._center = self._focus - rotmat2d(angle) @ np.array([np.sqrt(a**2 - b**2), 0])
+        self._center.append(self._focus - rotmat2d(angle) @ np.array([np.sqrt(a**2 - b**2), 0]))
         self._angle.append(angle)
