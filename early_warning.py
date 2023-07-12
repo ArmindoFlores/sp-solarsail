@@ -21,7 +21,7 @@ def radiation_pressure(distance, reflectivness=1):
     """Compute the radiation pressure of the sun on a body.
 
     Args:
-        distance (flaot): The distance from the body to the sun.
+        distance (float): The distance from the body to the sun.
         reflectivness (float, optional): The reflectivness of the body. Defaults to 1.
 
     Returns:
