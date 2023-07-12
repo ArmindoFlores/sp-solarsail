@@ -172,15 +172,18 @@ def main(args, parser):
         
         def accel(_, y):
             point = np.array([y[0], y[1]])
-            vel = np.array([y[2], y[3]])
+            # vel = np.array([y[2], y[3]])
             e_r = point - initial_conditions.focus
-            r = np.linalg.norm(e_r)
-            e_vec = np.cross(vel, np.cross(np.array([*e_r, 0]), vel))[:2] / simulator._mu - e_r / r
-            if custom_args.acc_profile == "always" or ((1 if custom_args.acc_profile == "escape_up" else -1) * np.cross(e_vec, e_r) > 0):
-                e_r /= r
-                solar_radiation_accel = 1e-3 * radiation_pressure(r * 1e3, custom_args.reflectivness) * e_r * custom_args.area / custom_args.mass
-                return solar_radiation_accel
-            return e_r * 0
+            # r = np.linalg.norm(e_r)
+            # e_vec = np.cross(vel, np.cross(np.array([*e_r, 0]), vel))[:2] / simulator._mu - e_r / r
+            # if custom_args.acc_profile == "always" or ((1 if custom_args.acc_profile == "escape_up" else -1) * np.cross(e_vec, e_r) > 0):
+            #     e_r /= r
+            #     solar_radiation_accel = 1e-3 * radiation_pressure(r * 1e3, custom_args.reflectivness) * e_r * custom_args.area / custom_args.mass
+            #     return solar_radiation_accel
+            # return e_r * 0
+            e_t = np.array([-e_r[1], e_r[0]])
+            e_t /= np.linalg.norm(e_t)
+            return e_t * 0.000007
         
         progress_bar = tqdm.tqdm(total=args.frames)
 
@@ -192,8 +195,8 @@ def main(args, parser):
             if args.output_type == "live":
                 fig = plt.figure(figsize=(6, 6))
                 ax = plt.axes(
-                    xlim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if args.limits is None else args.limits[:2], 
-                    ylim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if args.limits is None else args.limits[2:]
+                    xlim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if not hasattr(args, "limits") else args.limits[:2], 
+                    ylim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if not hasattr(args, "limits") else args.limits[2:]
                 )
             scatters.append(ax.scatter([], [], s=2, c="#FF0400", linewidths=0))
             lasts.append(ax.scatter([], [], s=8, c="k", linewidths=1))
@@ -272,8 +275,8 @@ def main(args, parser):
                     plt.clf()
                     fig = plt.figure(figsize=(6, 6))
                     ax = plt.axes(
-                        xlim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if args.limits is None else args.limits[:2], 
-                        ylim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if args.limits is None else args.limits[2:]
+                        xlim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if not hasattr(args, "limits") else args.limits[:2], 
+                        ylim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if not hasattr(args, "limits") else args.limits[2:]
                     )
                     # Initialize a scatter object for the plot
                     scatter1 = ax.scatter([], [], s=2, c="#FF0400", linewidths=0)
@@ -303,22 +306,23 @@ def main(args, parser):
                     plt.close()
         
         center, v, points = np.array(simulator._center), np.array(simulator._v), np.array(simulator._points)
-        np.savetxt(
-            os.path.join(args.output_dir, f"run{run_id}.csv"), 
-            list(zip(
-                simulator._time, 
-                simulator._a, 
-                simulator._e, 
-                simulator._angle, 
-                center[:,0], 
-                center[:,1], 
-                v[:,0], 
-                v[:,1], 
-                points[:,0],
-                points[:,1]
-            )),
-            delimiter=",", 
-        )
+        if hasattr(args, "output_dir"):
+            np.savetxt(
+                os.path.join(args.output_dir, f"run{run_id}.csv"), 
+                list(zip(
+                    simulator._time, 
+                    simulator._a, 
+                    simulator._e, 
+                    simulator._angle, 
+                    center[:,0], 
+                    center[:,1], 
+                    v[:,0], 
+                    v[:,1], 
+                    points[:,0],
+                    points[:,1]
+                )),
+                delimiter=",", 
+            )
     plt.close()
         
 
