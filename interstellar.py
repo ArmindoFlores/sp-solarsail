@@ -279,7 +279,7 @@ def main(args, parser):
     plt.close()
         
 
-if __name__ == "__main__":    
+if __name__ == "__main__":   
     parser = argparse.ArgumentParser(
         prog="interstellar",
         description="Run the orbital simulator for interstellar travel",
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     )
     ic_group = parser.add_argument_group("Initial Conditions", "Initial conditions for the satellite's orbit")
     ic_group.add_argument("-f", "--from-file", type=str, default=argparse.SUPPRESS, help="If specified, load the initial conditions from a file and run a simulation for every orbit presented, overlapping the results")
-    ic_group.add_argument("-e", "--eccentricity", type=float, default=0.01671, help="The initial orbit eccentricity")
+    ic_group.add_argument("-e", "--eccentricity", type=float, default=0, help="The initial orbit eccentricity")
     ic_group.add_argument("-a", "--semi-major-axis", type=float, default=AU*1e-3, help="The initial orbit's semi-major axis in kilometers")
     ic_group.add_argument("-v", "--velocity", type=as_list(float, 2), default=argparse.SUPPRESS, help="The initial velocity vector in km/s")
     ic_group.add_argument("-t", "--theta", type=float, default=0, help="The initial true anomaly in radians")
