@@ -26,6 +26,14 @@ def escape_up(t, y, orbital_params, reflectivness, area, mass):
         solar_radiation_accel = 1e-3 * radiation_pressure(r * 1e3, reflectivness) * e_r * area / mass
         return solar_radiation_accel
     return e_r * 0
+
+def always(t, y, orbital_params, reflectivness, area, mass):
+    point = np.array([y[0], y[1]])
+    e_r = point - orbital_params._focus
+    r = np.linalg.norm(e_r)
+    e_r /= r
+    solar_radiation_accel = 1e-3 * radiation_pressure(r * 1e3, reflectivness) * e_r * area / mass
+    return solar_radiation_accel
     
 def tangential(t, y, orbital_params, mag=0.000007):
     point = np.array([y[0], y[1]])

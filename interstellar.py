@@ -85,16 +85,19 @@ def plot_ellipse(line, center, a, b, angle, n_points=100, angle_start=0, angle_f
     y = center[1] + a * np.cos(theta) * np.sin(angle) + b * np.sin(theta) * np.cos(angle)
     return line.set_data(x, y)
 
-def simulate(simulator, timestep, accel, count, progress_bar, condition):
+def simulate(simulator, timestep, accel, count, progress_bar, condition, args):
     s = time.time()
     for _ in range(count):
+        if args.output_type == "hidden":
+            progress_bar.update()
         if progress_bar.last_print_n >= 1 and 1000 * (time.time() - s) >= 5:
             time.sleep(1e-3)
             s = time.time()
         with condition:
             simulator.iterate(timestep, accel)
             condition.notify_all()
-    progress_bar.write("Simulation complete, continuing display")
+    if args.output_type != "hidden":
+        progress_bar.write("Simulation complete, continuing display")
 
 def main(args, parser):
     if args.output_type == "save" and not hasattr(args, "frames"):
@@ -107,10 +110,12 @@ def main(args, parser):
     
     if hasattr(args, "output_dir") and not os.path.isdir(args.output_dir):
         os.mkdir(args.output_dir)
+        
+    figsize = (12, 12) if args.output_type == "video" else (6, 6)
     
     plt.rcParams.update(
         {
-            # "text.usetex": True,
+            "text.usetex": args.use_latex,
             "font.family": "serif",
             "font.sans-serif": "Helvetica",
         }
@@ -126,8 +131,8 @@ def main(args, parser):
     else:
         args_list.append(args)
     
-    if args.output_type == "save" or args.output_type == "hidden":
-        fig = plt.figure(figsize=(12, 12))
+    if args.output_type in ("save", "hidden") and args.overlap:
+        fig = plt.figure(figsize=figsize)
         if len(args_list) == 1:
             ax = plt.axes(
                 xlim=[-1.2*args_list[0].semi_major_axis, 1.2*args_list[0].semi_major_axis] if not hasattr(args, "limits") else args.limits[:2], 
@@ -148,7 +153,7 @@ def main(args, parser):
     simulation_data = []
     for run_id, custom_args in enumerate(args_list):
         initial_conditions = orbitsim.OrbitalParameters(
-            MU_SUN, 
+            1e-9*G*args.mass, 
             custom_args.theta, 
             0, 
             a=custom_args.semi_major_axis,
@@ -173,12 +178,12 @@ def main(args, parser):
         
         progress_bar = tqdm.tqdm(total=args.frames)
 
-        simulator_thread = threading.Thread(target=simulate, args=(simulator, args.timestep, accel, args.frames, progress_bar, sim_condition))
+        simulator_thread = threading.Thread(target=simulate, args=(simulator, args.timestep, accel, args.frames, progress_bar, sim_condition, args))
         simulator_thread.start()
         
         # Create a figure if needed
-        if args.output_type == "live":
-            fig = plt.figure(figsize=(6, 6))
+        if args.output_type == "live" or not args.overlap:
+            fig = plt.figure(figsize=figsize)
             ax = plt.axes(
                 xlim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if not hasattr(args, "limits") else args.limits[:2], 
                 ylim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if not hasattr(args, "limits") else args.limits[2:]
@@ -204,7 +209,7 @@ def main(args, parser):
         
         def animate(frame):
             updated = [txt, foc]
-            if run_id == len(args_list)-1 or args.output_type == "live":
+            if run_id == len(args_list)-1 or args.output_type == "live" or not args.overlap:
                 progress_bar.update()
             
             with sim_condition:
@@ -212,10 +217,10 @@ def main(args, parser):
                     sim_condition.wait()
             
                 for i, (last, ellipse, scatter) in enumerate(zip(lasts, ellipses, scatters)):
-                    if args.output_type == "live" and i != len(lasts)-1:
+                    if (args.output_type == "live" or not args.overlap) and i != len(lasts)-1:
                         continue
                     updated += [last, ellipse, scatter]
-                    if i == len(lasts)-1 or args.output_type == "live":
+                    if i == len(lasts)-1 or args.output_type == "live" or not args.overlap:
                         current_simulator = simulator
                     else:
                         current_simulator = simulation_data[i]
@@ -223,7 +228,7 @@ def main(args, parser):
                     last.set_offsets(current_simulator._points[frame])
                     last.set_facecolor("#FFFFFF")
                     
-                    if len(args_list) == 1 or args.output_type == "live":
+                    if len(args_list) == 1 or args.output_type == "live" or not args.overlap:
                         if current_simulator._a[frame] > 0:
                             txt.set_text(f"a = {current_simulator._a[frame]:.1f} km\ne = {current_simulator._e[frame]:.4f}\n$\\epsilon$ = {current_simulator._mechanical_energy[frame]:.4f} J kg$^\x7b-1\x7d$\n{time_formatter(current_simulator._time[frame])}")
                         else:
@@ -240,21 +245,21 @@ def main(args, parser):
         
         ani = animation.FuncAnimation(fig, animate, init_func=init, blit=True, interval=1, frames=args.frames if hasattr(args, "frames") else None, repeat=False)
         
-        if args.output_type == "save" and run_id == len(args_list)-1:
+        if args.output_type == "save" and (run_id == len(args_list)-1 or not args.overlap):
             writervideo = animation.FFMpegWriter(fps=args.framerate, bitrate=12000)
-            ani.save(os.path.join(args.output_dir, "trajectory.mp4"), writer=writervideo)
+            ani.save(os.path.join(args.output_dir, f"trajectory_{'full' if args.overlap else run_id}.mp4"), writer=writervideo)
         elif args.output_type == "live":
             plt.show()
-        elif args.output_type == "hidden":
+        elif args.output_type == "hidden" and (run_id == len(args_list)-1 or not args.overlap):
             if hasattr(args, "snapshots"):
                 for frame in args.snapshots:
                     animate(frame)
-                    plt.savefig(os.path.join(args.output_dir, f"run_{run_id}_frame{frame}.pdf"), bbox_inches="tight")
+                    plt.savefig(os.path.join(args.output_dir, f"run_{'full' if args.overlap else run_id}_frame{frame}.pdf"), bbox_inches="tight")
 
         simulator_thread.join()
         progress_bar.close()
         
-        if (args.output_type in ("save", "hidden")) and run_id != len(args_list)-1:
+        if (args.output_type in ("save", "hidden")) and run_id != len(args_list)-1 and args.overlap:
             simulation_data.append(simulator)
         
         center, v, points = np.array(simulator._center), np.array(simulator._v), np.array(simulator._points)
@@ -291,6 +296,7 @@ if __name__ == "__main__":
     ic_group.add_argument("-a", "--semi-major-axis", type=float, default=AU*1e-3, help="The initial orbit's semi-major axis in kilometers")
     ic_group.add_argument("-v", "--velocity", type=as_list(float, 2), default=argparse.SUPPRESS, help="The initial velocity vector in km/s")
     ic_group.add_argument("-t", "--theta", type=float, default=0, help="The initial true anomaly in radians")
+    ic_group.add_argument("-m", "--mass", type=float, default=M, help="The mass of the center body in kilograms")
     ic_group.add_argument("-T", "--timestep", type=float, default=36000, help="The simulation timestep in seconds")
     ic_group.add_argument("-p", "--acc-profile", type=str, default=argparse.SUPPRESS, help="The acceleration profile. Should have the format of modulename.function(param1, param2, ...). 'modulename' will be imported and 'function' will be called with the parameters (t, y, simulator, param1, param2, ...) where t is the simulation time and y is a vector with (px, py, vx, vy).")
     output_group = parser.add_argument_group("Output Options")
@@ -300,5 +306,7 @@ if __name__ == "__main__":
     output_group.add_argument("-o", "--output-dir", type=str, default=argparse.SUPPRESS, help="The output files directory")
     output_group.add_argument("-s", "--snapshots", type=as_list(int), default=argparse.SUPPRESS, help="A list of frames to save snapshots of")
     output_group.add_argument("-l", "--limits", type=as_list(float, 4), default=argparse.SUPPRESS, help="The x and y limits of the display window (x_min, x_max, y_min, y_max)")
+    output_group.add_argument("-E", "--overlap", action="store_true", default=False, help="Whether multiple trajectories should overlap")
+    output_group.add_argument("-L", "--use-latex", action="store_true", default=False, help="Whether to use LaTeX for rendering. WARNING: This takes a long time")
     
     main(parser.parse_args(), parser)
