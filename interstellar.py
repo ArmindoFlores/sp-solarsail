@@ -188,7 +188,7 @@ def main(args, parser):
                 xlim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if not hasattr(args, "limits") else args.limits[:2], 
                 ylim=[-1.2*initial_conditions.a, 1.2*initial_conditions.a] if not hasattr(args, "limits") else args.limits[2:]
             )
-        scatters.append(ax.scatter([], [], s=2, c="#FF0400", linewidths=0))
+        scatters.append(ax.scatter([], [], s=2, c=custom_args.color, linewidths=0))
         lasts.append(ax.scatter([], [], s=8, c="k", linewidths=1))
         ellipses.append(plt.plot([], [], "k--", linewidth=1)[0])
         
@@ -299,6 +299,7 @@ if __name__ == "__main__":
     ic_group.add_argument("-m", "--mass", type=float, default=M, help="The mass of the center body in kilograms")
     ic_group.add_argument("-T", "--timestep", type=float, default=36000, help="The simulation timestep in seconds")
     ic_group.add_argument("-p", "--acc-profile", type=str, default=argparse.SUPPRESS, help="The acceleration profile. Should have the format of modulename.function(param1, param2, ...). 'modulename' will be imported and 'function' will be called with the parameters (t, y, simulator, param1, param2, ...) where t is the simulation time and y is a vector with (px, py, vx, vy).")
+    ic_group.add_argument("-C", "--color", type=str, default="r", help="The color to plot the trajectory as. Accepts any format matplotlib accepts.")
     output_group = parser.add_argument_group("Output Options")
     output_group.add_argument("-O", "--output-type", type=output_type, default="live", help="How to output the data. 'live' shows a live plot of the simulation, 'save' generates a video, and 'hidden' doesn't show anything")
     output_group.add_argument("-F", "--frames", type=int, default=argparse.SUPPRESS, help="The total number of frames")
