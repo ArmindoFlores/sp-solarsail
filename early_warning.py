@@ -66,7 +66,7 @@ def required_area_reflectivness():
     
     _, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 3))
     for reflectivness in np.linspace(0.5, 1, 5):
-        ax.plot(r / AU, required_area(r, 150, reflectivness), label=f"$r={reflectivness}$")  
+        ax.plot(r / AU, required_area(r, 150, reflectivness), linewidth=1.5, label=f"$R={reflectivness}$")  
     
     ax.grid()
     ax.set_xlabel("Distance to the Sun [AU]")
@@ -86,7 +86,7 @@ def required_area_mass():
     r = np.linspace(0.2*AU, AU, 5000)
     
     for mass in np.linspace(1, 50, 5):
-        plt.plot(r / AU, required_area(r, mass, 1), label=f"$m={mass}$")
+        plt.plot(r / AU, required_area(r, mass, 1), linewidth=1.5, label=f"$m={mass}$")
     
     plt.grid()
     plt.xlabel("Distance to the Sun [AU]")
