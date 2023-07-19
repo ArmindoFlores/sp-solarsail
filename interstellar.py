@@ -93,10 +93,16 @@ def get_unit(limits):
     return 1, "km"
 
 
-def plot_ellipse(
-    line, center, a, b, angle, n_points=100, angle_start=0, angle_finish=2 * np.pi
-):
+def plot_ellipse(line, center, a, b, e, angle, intersection_points, n_points=100, angle_start=0, angle_finish=2 * np.pi):
+    if len(intersection_points) > 0:
+        angle_start = cartesian2true_anomaly(a, e, intersection_points[0])
+        angle_finish = cartesian2true_anomaly(a, e, intersection_points[1])
+    if angle_finish < angle_start:
+        temp = angle_finish
+        angle_finish = angle_start
+        angle_start = temp
     theta = np.linspace(angle_start, angle_finish, n_points)
+
     x = (
         center[0]
         + a * np.cos(theta) * np.cos(angle)
@@ -160,6 +166,19 @@ def find_ellipse_square_intersection(center, a, b, angle, limits):
             
     return intersection_points
 
+
+def cartesian2true_anomaly(a, e, point):
+    x = np.float64(point[0])
+    y = np.float64(point[1])
+    r = np.sqrt(x**2 + y**2)
+    theta = np.arccos((a * (1 - e**2) - r) / (e * r))
+
+    # Adjust theta based on the quadrant of the point
+    if y < 0:
+        theta = -theta
+
+    return theta
+        
 
 def simulate(simulator, timestep, accel, count, progress_bar, condition, args):
     s = time.time()
@@ -383,14 +402,25 @@ def main(args, parser):
                                 f"$v_\infty$ = {np.sqrt(current_simulator._mu / -current_simulator._a[frame]):.3f} km/s\n$t =$ {time_formatter(current_simulator._time[frame])}"
                             )
                         txt.set_fontsize(16)
+                        
+                    intersection_points = find_ellipse_square_intersection(
+                        current_simulator._center[frame],
+                        current_simulator._a[frame],
+                        current_simulator._b[frame],
+                        current_simulator._angle[frame],
+                        args.limits,
+                    )
 
                     plot_ellipse(
                         ellipse,
                         current_simulator._center[frame],
                         current_simulator._a[frame],
                         current_simulator._b[frame],
+                        current_simulator._e[frame],
                         current_simulator._angle[frame],
+                        intersection_points
                     )
+                        
 
             if hasattr(args, "snapshots") and frame in args.snapshots:
                 plt.savefig(
