@@ -13,6 +13,7 @@ import tqdm
 
 import orbitsim
 from constants import *
+from sympy import symbols, Eq, solve
 
 
 def as_list(type, minsize=None, maxsize=None):
@@ -107,6 +108,57 @@ def plot_ellipse(
         + b * np.sin(theta) * np.cos(angle)
     )
     return line.set_data(x, y)
+
+
+def find_ellipse_square_intersection(center, a, b, angle, limits):
+    x0 = center[0]
+    y0 = center[1]
+
+    # Calculate the coordinates of the four corners of the square
+    limits = [limit * 1 for limit in limits]
+    x_min = limits[0]
+    x_max = limits[1]
+    y_min = limits[2]
+    y_max = limits[3]
+
+    intersection_points = []
+
+    # General Equation of an Ellipse with counterclockwise rotation by an angle α and (x0, y0) origin:
+    #  ((x - x0) * cos(α) + (y - y0) * sin(α))^2     ((x - x0) * sin(α) - (y - y0) * cos(α))^2
+    # ------------------------------------------- + ------------------------------------------- = 1
+    #                    a^2                                           b^2
+
+    # Intersection with the top and bottom
+    x = symbols("x")
+    y_values = [y_min, y_max]
+    for y in y_values:
+        eq = Eq(
+            (((x - x0) * np.cos(angle) + (y - y0) * np.sin(angle)) ** 2) / (a**2)
+            + (((x - x0) * np.sin(angle) - (y - y0) * np.cos(angle)) ** 2) / (b**2),
+            1,
+        )
+        solutions = solve(eq, x)
+
+        for solution in solutions:
+            if solution.is_real and x_min <= solution <= x_max:
+                intersection_points.append((solution, y))
+                
+    # Intersection with the left and right
+    x_values = [x_min, x_max]
+    y = symbols("y")
+    for x in x_values:
+        eq = Eq(
+            (((x - x0) * np.cos(angle) + (y - y0) * np.sin(angle)) ** 2) / (a**2)
+            + (((x - x0) * np.sin(angle) - (y - y0) * np.cos(angle)) ** 2) / (b**2),
+            1,
+        )
+        solutions = solve(eq, y)
+
+        for solution in solutions:
+            if solution.is_real and y_min <= solution <= y_max:
+                intersection_points.append((x, solution))
+            
+    return intersection_points
 
 
 def simulate(simulator, timestep, accel, count, progress_bar, condition, args):
