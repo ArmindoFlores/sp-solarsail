@@ -113,7 +113,6 @@ def find_ellipse_square_intersection(center, a, b, angle, limits):
     y0 = center[1]
 
     # Calculate the coordinates of the four corners of the square
-    limits = [limit * 1 for limit in limits]
     x_min = limits[0]
     x_max = limits[1]
     y_min = limits[2]
