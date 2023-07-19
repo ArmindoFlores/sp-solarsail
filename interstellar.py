@@ -5,13 +5,14 @@ import re
 import shlex
 import threading
 import time
+import warnings
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import mpmath.libmp
 import numpy as np
 import tqdm
-from sympy import Eq, solve, symbols
+from scipy.optimize import fsolve
 
 import orbitsim
 from constants import *
@@ -94,74 +95,75 @@ def get_unit(limits):
     return 1, "km"
 
 
-def plot_ellipse(line, focus, a, b, e, angle, intersection_points, n_points=100, angle_start=0, angle_finish=2*np.pi):
+def plot_conic(
+    line,
+    focus,
+    a,
+    e,
+    angle,
+    intersection_points,
+    n_points=100,
+    angle_start=0,
+    angle_finish=2 * np.pi,
+):
     if len(intersection_points) > 0:
         angle_start = cartesian2true_anomaly(a, e, intersection_points[0])
         angle_finish = cartesian2true_anomaly(a, e, intersection_points[1])
     if angle_finish < angle_start:
         angle_finish, angle_start = angle_start, angle_finish
-        
+
     theta = np.linspace(angle_start, angle_finish, n_points)
 
     r = orbitsim.orbit_equation(theta, a, e)
     points = orbitsim.rotmat2d(angle) @ (r * np.array([np.cos(theta), np.sin(theta)]))
-    return line.set_data(focus[0]+points[0], focus[1]+points[1])
+    return line.set_data(focus[0] + points[0], focus[1] + points[1])
 
 
-def find_ellipse_square_intersection(center, a, b, angle, limits):
+def conic_equation(x, y, x0, y0, a, b, angle):
+    return (
+        (((x - x0) * np.cos(angle) + (y - y0) * np.sin(angle)) ** 2) / (a**2)
+        + (((x - x0) * np.sin(angle) - (y - y0) * np.cos(angle)) ** 2) / (b**2)
+        - 1
+    )
+
+
+def find_conic_square_intersection(center, a, b, e, angle, limits):
     x0 = center[0]
     y0 = center[1]
 
     # Calculate the coordinates of the four corners of the square
-    limits = [limit * 1 for limit in limits]
     x_min = limits[0]
     x_max = limits[1]
     y_min = limits[2]
     y_max = limits[3]
 
     intersection_points = []
-
-    # General Equation of an Ellipse with counterclockwise rotation by an angle α and (x0, y0) origin:
-    #  ((x - x0) * cos(α) + (y - y0) * sin(α))^2     ((x - x0) * sin(α) - (y - y0) * cos(α))^2
-    # ------------------------------------------- + ------------------------------------------- = 1
-    #                    a^2                                           b^2
-
+    
     # Intersection with the top and bottom
-    x = symbols("x")
-    y_values = [y_min, y_max]
-    for y in y_values:
-        eq = Eq(
-            (((x - x0) * np.cos(angle) + (y - y0) * np.sin(angle)) ** 2) / (a**2)
-            + (((x - x0) * np.sin(angle) - (y - y0) * np.cos(angle)) ** 2) / (b**2),
-            1,
-        )
-        try:
-            solutions = solve(eq, x)
-        except mpmath.libmp.libhyper.NoConvergence:
-            solutions = []
+    for y in (y_min, y_max):
+        for xlim in (x_min, x_max):
+            sol = fsolve(lambda x: conic_equation(x, y, x0, y0, a, b, angle), xlim)
+            if (
+                np.isclose(conic_equation(sol, y, x0, y0, a, b, angle), 0)
+                and x_min <= sol <= x_max
+            ):
+                if len(intersection_points) == 0:
+                    intersection_points.append([sol[0], y])
+                else:
+                    if not np.isclose(intersection_points[-1][0], sol[0]):
+                        intersection_points.append([sol[0], y])
 
-        for solution in solutions:
-            if solution.is_real and x_min <= solution <= x_max:
-                intersection_points.append((solution, y))
-                
     # Intersection with the left and right
-    x_values = [x_min, x_max]
-    y = symbols("y")
-    for x in x_values:
-        eq = Eq(
-            (((x - x0) * np.cos(angle) + (y - y0) * np.sin(angle)) ** 2) / (a**2)
-            + (((x - x0) * np.sin(angle) - (y - y0) * np.cos(angle)) ** 2) / (b**2),
-            1,
-        )
-        try:
-            solutions = solve(eq, y)
-        except mpmath.libmp.libhyper.NoConvergence:
-            solutions = []
+    for x in (x_min, x_max):
+        for ylim in (y_min, y_max):
+            sol = fsolve(lambda y: conic_equation(x, y, x0, y0, a, b, angle), ylim)
+            if (
+                np.isclose(conic_equation(x, sol, x0, y0, a, b, angle), 0)
+                and y_min <= sol <= y_max
+            ):
+                if not np.isclose(intersection_points[-1][1], sol[0]):
+                    intersection_points.append([x, sol[0]])
 
-        for solution in solutions:
-            if solution.is_real and y_min <= solution <= y_max:
-                intersection_points.append((x, solution))
-            
     return intersection_points
 
 
@@ -176,7 +178,7 @@ def cartesian2true_anomaly(a, e, point):
         theta = -theta
 
     return theta
-        
+
 
 def simulate(simulator, timestep, accel, count, progress_bar, condition, args):
     s = time.time()
@@ -223,6 +225,8 @@ def main(args, parser):
                 "text.latex.preamble": r"\usepackage{mathrsfs}",
             }
         )
+        
+    warnings.filterwarnings("ignore", category=RuntimeWarning, message="The iteration is not making good progress")
 
     args_list = []
     if hasattr(args, "from_file"):
@@ -257,7 +261,7 @@ def main(args, parser):
                 return
             ax = plt.axes(xlim=args.limits[:2], ylim=args.limits[2:])
     scatters = []
-    ellipses = []
+    conics = []
     lasts = []
 
     simulation_data = []
@@ -271,7 +275,7 @@ def main(args, parser):
             v=np.array(custom_args.velocity)
             if hasattr(custom_args, "velocity")
             else None,
-            focus=np.array([0, 0]), # FIXME: doesn't work if the focus is not 0,0
+            focus=np.array([0, 0]),  # FIXME: doesn't work if the focus is not 0,0
         )
         simulator = orbitsim.OrbitSimulator(initial_conditions)
         sim_condition = threading.Condition()
@@ -320,7 +324,7 @@ def main(args, parser):
             )
         scatters.append(ax.scatter([], [], s=2, c=custom_args.color, linewidths=0))
         lasts.append(ax.scatter([], [], s=80, c="k", linewidths=1))
-        ellipses.append(plt.plot([], [], "k--", linewidth=1)[0])
+        conics.append(plt.plot([], [], "k--", linewidth=1)[0])
 
         txt = ax.text(
             0.05,
@@ -341,12 +345,12 @@ def main(args, parser):
 
         def init():
             updated = [txt, foc]
-            for last, ellipse, scatter in zip(lasts, ellipses, scatters):
+            for last, conic, scatter in zip(lasts, conics, scatters):
                 last.set_zorder(5)
                 last.set_edgecolor("#000000")
                 updated.append(last)
-                ellipse.set_zorder(4)
-                updated.append(ellipse)
+                conic.set_zorder(4)
+                updated.append(conic)
                 scatter.set_zorder(3)
                 updated.append(scatter)
             return updated
@@ -364,14 +368,14 @@ def main(args, parser):
                 while len(simulator._time) <= frame:
                     sim_condition.wait()
 
-                for i, (last, ellipse, scatter) in enumerate(
-                    zip(lasts, ellipses, scatters)
+                for i, (last, conic, scatter) in enumerate(
+                    zip(lasts, conics, scatters)
                 ):
                     if (args.output_type == "live" or not args.overlap) and i != len(
                         lasts
                     ) - 1:
                         continue
-                    updated += [last, ellipse, scatter]
+                    updated += [last, conic, scatter]
                     if (
                         i == len(lasts) - 1
                         or args.output_type == "live"
@@ -400,25 +404,24 @@ def main(args, parser):
                                 f"$v_\infty$ = {np.sqrt(current_simulator._mu / -current_simulator._a[frame]):.3f} km/s\n$t =$ {time_formatter(current_simulator._time[frame])}"
                             )
                         txt.set_fontsize(16)
-                        
-                    intersection_points = find_ellipse_square_intersection(
-                        current_simulator._center[frame],
-                        current_simulator._a[frame],
-                        current_simulator._b[frame],
-                        current_simulator._angle[frame],
-                        args.limits,
-                    )
 
-                    plot_ellipse(
-                        ellipse,
-                        current_simulator._focus,
+                    intersection_points = find_conic_square_intersection(
+                        current_simulator._center[frame],
                         current_simulator._a[frame],
                         current_simulator._b[frame],
                         current_simulator._e[frame],
                         current_simulator._angle[frame],
-                        intersection_points
+                        args.limits,
                     )
-                        
+
+                    plot_conic(
+                        conic,
+                        current_simulator._focus,
+                        current_simulator._a[frame],
+                        current_simulator._e[frame],
+                        current_simulator._angle[frame],
+                        intersection_points,
+                    )
 
             if hasattr(args, "snapshots") and frame in args.snapshots:
                 plt.savefig(
