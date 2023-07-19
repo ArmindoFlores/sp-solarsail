@@ -8,12 +8,13 @@ import time
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
+import mpmath.libmp
 import numpy as np
 import tqdm
+from sympy import Eq, solve, symbols
 
 import orbitsim
 from constants import *
-from sympy import symbols, Eq, solve
 
 
 def as_list(type, minsize=None, maxsize=None):
@@ -93,27 +94,18 @@ def get_unit(limits):
     return 1, "km"
 
 
-def plot_ellipse(line, center, a, b, e, angle, intersection_points, n_points=100, angle_start=0, angle_finish=2 * np.pi):
+def plot_ellipse(line, focus, a, b, e, angle, intersection_points, n_points=100, angle_start=0, angle_finish=2*np.pi):
     if len(intersection_points) > 0:
         angle_start = cartesian2true_anomaly(a, e, intersection_points[0])
         angle_finish = cartesian2true_anomaly(a, e, intersection_points[1])
     if angle_finish < angle_start:
-        temp = angle_finish
-        angle_finish = angle_start
-        angle_start = temp
+        angle_finish, angle_start = angle_start, angle_finish
+        
     theta = np.linspace(angle_start, angle_finish, n_points)
 
-    x = (
-        center[0]
-        + a * np.cos(theta) * np.cos(angle)
-        - b * np.sin(theta) * np.sin(angle)
-    )
-    y = (
-        center[1]
-        + a * np.cos(theta) * np.sin(angle)
-        + b * np.sin(theta) * np.cos(angle)
-    )
-    return line.set_data(x, y)
+    r = orbitsim.orbit_equation(theta, a, e)
+    points = orbitsim.rotmat2d(angle) @ (r * np.array([np.cos(theta), np.sin(theta)]))
+    return line.set_data(focus[0]+points[0], focus[1]+points[1])
 
 
 def find_ellipse_square_intersection(center, a, b, angle, limits):
@@ -143,7 +135,10 @@ def find_ellipse_square_intersection(center, a, b, angle, limits):
             + (((x - x0) * np.sin(angle) - (y - y0) * np.cos(angle)) ** 2) / (b**2),
             1,
         )
-        solutions = solve(eq, x)
+        try:
+            solutions = solve(eq, x)
+        except mpmath.libmp.libhyper.NoConvergence:
+            solutions = []
 
         for solution in solutions:
             if solution.is_real and x_min <= solution <= x_max:
@@ -158,7 +153,10 @@ def find_ellipse_square_intersection(center, a, b, angle, limits):
             + (((x - x0) * np.sin(angle) - (y - y0) * np.cos(angle)) ** 2) / (b**2),
             1,
         )
-        solutions = solve(eq, y)
+        try:
+            solutions = solve(eq, y)
+        except mpmath.libmp.libhyper.NoConvergence:
+            solutions = []
 
         for solution in solutions:
             if solution.is_real and y_min <= solution <= y_max:
@@ -273,7 +271,7 @@ def main(args, parser):
             v=np.array(custom_args.velocity)
             if hasattr(custom_args, "velocity")
             else None,
-            focus=np.array([0, 0]),
+            focus=np.array([0, 0]), # FIXME: doesn't work if the focus is not 0,0
         )
         simulator = orbitsim.OrbitSimulator(initial_conditions)
         sim_condition = threading.Condition()
@@ -333,7 +331,7 @@ def main(args, parser):
             va="top",
             bbox=dict(facecolor="white", edgecolor="black", linewidth=0.75),
         )
-        foc = ax.scatter(0, 0, s=500, c="#FFC700", linewidths=0)
+        foc = ax.scatter(*initial_conditions.focus, s=500, c="#FFC700", linewidths=0)
 
         ax.tick_params(axis="both", labelsize=14)
         ax.get_xaxis().get_offset_text().set_fontsize(12)
@@ -413,7 +411,7 @@ def main(args, parser):
 
                     plot_ellipse(
                         ellipse,
-                        current_simulator._center[frame],
+                        current_simulator._focus,
                         current_simulator._a[frame],
                         current_simulator._b[frame],
                         current_simulator._e[frame],
