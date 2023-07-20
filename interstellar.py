@@ -465,10 +465,8 @@ def main(args, parser):
                         intersection_points,
                     )
                     
-                    for sub_conic in conic:
-                        if current_simulator._a[frame] > 0:
-                            sub_conic.set_linestyle("--")
-                        else:
+                    if current_simulator._e[frame] > 1:
+                        for sub_conic in conic:
                             sub_conic.set_linestyle("-.")
 
             if hasattr(args, "snapshots") and frame in args.snapshots:
