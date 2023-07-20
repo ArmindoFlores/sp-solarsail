@@ -17,6 +17,7 @@ This script will simulate an orbit with the specified initial conditions. To spe
 * Eccentricity - `--eccentricity`/`-e` 
 * True anomaly (radians) - `--theta`/`-t` 
 * Velocity (kilometers per second) - `--velocity`/`-v` 
+* Focus coordinates (kilometers) - `--focus-coordinates`
 
 For example, the following command will simulate the Earth's orbit around the Sun: `python interstellar.py -a 1.495979e+8 -e 0.01671 --frames 1000`. The last argument, `--frames`, specifies the number of iterations to simulate the system for.
 
@@ -54,3 +55,6 @@ There is also a list of other arguments that deal with the output of this script
 * `-r`/`--framerate` - Used to set the video framerate when using `-O save`.
 * `-s`/`--snapshots` - A list of frames to save as images. For example, `-s 1,5,10` will save the frames 1, 5, and 10 to a file.
 * `-l`/`--limits` - The `x` and `y` limits of the display window, in the form of `--limits xmin,xmax,ymin,ymax`. 
+
+## Running on Mac
+If a warning appears within the progress bar saying `ApplePersistenceIgnoreState: Existing state will not be touched...`, the command `defaults write org.python.python ApplePersistenceIgnoreState NO` runned on the terminal should fix it.
