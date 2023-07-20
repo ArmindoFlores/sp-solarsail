@@ -172,7 +172,7 @@ def cartesian2true_anomaly(a, e, point):
 
 
 def plot_conic(
-    line,
+    lines,
     focus,
     a,
     e,
@@ -200,7 +200,17 @@ def plot_conic(
 
     r = orbitsim.orbit_equation(theta, a, e)
     points = orbitsim.rotmat2d(angle) @ (r * np.array([np.cos(theta), np.sin(theta)]))
-    return line.set_data(focus[0] + points[0], focus[1] + points[1])
+    
+    # Check for discontinuity
+    if a < 0:
+        diff = np.linalg.norm(np.diff(points), axis=0)
+        jump_indices = list(sorted(np.argpartition(diff, -2)[-2:]+1))
+        return (
+            lines[0].set_data(focus[0] + points[0,:jump_indices[0]], focus[1] + points[1,:jump_indices[0]]),
+            lines[1].set_data(focus[0] + points[0,jump_indices[1]:], focus[1] + points[1,jump_indices[1]:])
+        )
+    
+    return lines[0].set_data(focus[0] + points[0], focus[1] + points[1])
 
 
 def simulate(simulator, timestep, accel, count, progress_bar, condition, args):
@@ -351,7 +361,10 @@ def main(args, parser):
             )
         scatters.append(ax.scatter([], [], s=2, c=custom_args.color, linewidths=0))
         lasts.append(ax.scatter([], [], s=80, c="k", linewidths=1))
-        conics.append(plt.plot([], [], "k--", linewidth=1)[0])
+        conics.append((
+            plt.plot([], [], "k--", linewidth=1)[0], 
+            plt.plot([], [], "k--", linewidth=1)[0],
+        ))
 
         txt = ax.text(
             0.05,
@@ -376,8 +389,9 @@ def main(args, parser):
                 last.set_zorder(5)
                 last.set_edgecolor("#000000")
                 updated.append(last)
-                conic.set_zorder(4)
-                updated.append(conic)
+                for sub_conic in conic:
+                    sub_conic.set_zorder(4)
+                    updated.append(sub_conic)
                 scatter.set_zorder(3)
                 updated.append(scatter)
             return updated
@@ -402,7 +416,7 @@ def main(args, parser):
                         lasts
                     ) - 1:
                         continue
-                    updated += [last, conic, scatter]
+                    updated += [last, *conic, scatter]
                     if (
                         i == len(lasts) - 1
                         or args.output_type == "live"
@@ -670,4 +684,7 @@ if __name__ == "__main__":
         help="The coordinates of the center body in kilograms",
     )
 
-    main(parser.parse_args(), parser)
+    try:
+        main(parser.parse_args(), parser)
+    except KeyboardInterrupt:
+        pass
