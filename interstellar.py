@@ -95,8 +95,8 @@ def get_unit(limits):
     return 1, "km"
 
 
-def conic_equation(x, y, x0, y0, a, b, angle):
-    # General Equation of an Ellipse with counterclockwise rotation by an angle α and (x0, y0) focus:
+def ellipse_equation(x, y, x0, y0, a, b, angle):
+    # General Equation of an Ellipse with counterclockwise rotation by an angle α and (x0, y0) center:
     #  ((x - x0) * cos(α) + (y - y0) * sin(α))^2     ((x - x0) * sin(α) - (y - y0) * cos(α))^2
     # ------------------------------------------- + ------------------------------------------- = 1
     #                    a^2                                           b^2
@@ -107,9 +107,9 @@ def conic_equation(x, y, x0, y0, a, b, angle):
     )
 
 
-def find_conic_square_intersection(focus, a, b, e, angle, limits):
-    x0 = focus[0]
-    y0 = focus[1]
+def find_conic_square_intersection(center, a, b, e, angle, limits):
+    x0 = center[0]
+    y0 = center[1]
 
     # Calculate the coordinates of the four corners of the square
     x_min = limits[0]
@@ -119,33 +119,41 @@ def find_conic_square_intersection(focus, a, b, e, angle, limits):
 
     intersection_points = []
 
-    # Intersection with the top and bottom
-    for y in (y_min, y_max):
-        for xlim in (x_min, x_max):
-            sol = fsolve(lambda x: conic_equation(x, y, x0, y0, a, b, angle), xlim)
-            if (
-                np.isclose(conic_equation(sol, y, x0, y0, a, b, angle), 0)
-                and x_min <= sol <= x_max
-            ):
-                if len(intersection_points) == 0:
-                    intersection_points.append([sol[0], y])
-                else:
-                    if not np.isclose(intersection_points[-1][0], sol[0]):
+    # Ellipse and Parabola
+    if e <= 1:
+        # Intersection with the top and bottom
+        for y in (y_min, y_max):
+            for xlim in (x_min, x_max):
+                sol = fsolve(
+                    lambda x: ellipse_equation(x, y, x0, y0, a, b, angle), xlim
+                )
+                if (
+                    np.isclose(ellipse_equation(sol, y, x0, y0, a, b, angle), 0)
+                    and x_min <= sol <= x_max
+                ):
+                    if len(intersection_points) == 0:
                         intersection_points.append([sol[0], y])
+                    else:
+                        if not np.isclose(intersection_points[-1][0], sol[0]):
+                            intersection_points.append([sol[0], y])
 
-    # Intersection with the left and right
-    for x in (x_min, x_max):
-        for ylim in (y_min, y_max):
-            sol = fsolve(lambda y: conic_equation(x, y, x0, y0, a, b, angle), ylim)
-            if (
-                np.isclose(conic_equation(x, sol, x0, y0, a, b, angle), 0)
-                and y_min <= sol <= y_max
-            ):
-                if len(intersection_points) == 0:
-                    intersection_points.append([x, sol[0]])
-                else:
-                    if not np.isclose(intersection_points[-1][1], sol[0]):
+        # Intersection with the left and right
+        for x in (x_min, x_max):
+            for ylim in (y_min, y_max):
+                sol = fsolve(
+                    lambda y: ellipse_equation(x, y, x0, y0, a, b, angle), ylim
+                )
+                if (
+                    np.isclose(ellipse_equation(x, sol, x0, y0, a, b, angle), 0)
+                    and y_min <= sol <= y_max
+                ):
+                    if len(intersection_points) == 0:
                         intersection_points.append([x, sol[0]])
+                    else:
+                        if not np.isclose(intersection_points[-1][1], sol[0]):
+                            intersection_points.append([x, sol[0]])
+                            
+    # Hyperbole (e > 1) not needed
 
     return intersection_points
 
@@ -189,7 +197,7 @@ def plot_conic(
             else:
                 start, end = s[i][0], s[i + 1][0]
                 theta.extend(np.linspace(start, end, n_points, endpoint=False).tolist())
-    
+
     r = orbitsim.orbit_equation(theta, a, e)
     points = orbitsim.rotmat2d(angle) @ (r * np.array([np.cos(theta), np.sin(theta)]))
     return line.set_data(focus[0] + points[0], focus[1] + points[1])
@@ -206,8 +214,8 @@ def simulate(simulator, timestep, accel, count, progress_bar, condition, args):
         with condition:
             simulator.iterate(timestep, accel)
             condition.notify_all()
-    #if args.output_type != "hidden":
-        #progress_bar.write("Simulation complete, continuing display")
+    # if args.output_type != "hidden":
+    # progress_bar.write("Simulation complete, continuing display")
 
 
 def main(args, parser):
@@ -425,7 +433,7 @@ def main(args, parser):
                         txt.set_fontsize(16)
 
                     intersection_points = find_conic_square_intersection(
-                        current_simulator._focus,
+                        current_simulator._center[frame],
                         current_simulator._a[frame],
                         current_simulator._b[frame],
                         current_simulator._e[frame],

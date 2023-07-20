@@ -216,10 +216,10 @@ class OrbitSimulator:
         mech_e = np.sum(np.square(vel)) / 2 - self._mu / r_mag
         a = -self._mu / (2 * mech_e)
         
-        if e > 1:
-            b = float("nan")
-        else:
+        if e <= 1: # ellipse and parabola
             b = a * np.sqrt(1 - e**2)
+        else: # hyperbola
+            b = a * np.sqrt(e**2 - 1)
         angle = np.arctan2(e_vec[1], e_vec[0])
         
         self._time.append(self._time[-1]+ts)
@@ -229,5 +229,8 @@ class OrbitSimulator:
         self._e.append(e)
         self._b.append(b)
         self._mechanical_energy.append(mech_e)
-        self._center.append(self._focus - rotmat2d(angle) @ np.array([np.sqrt(a**2 - b**2), 0]))
+        if e <= 1: # ellipse and parabola
+            self._center.append(self._focus - rotmat2d(angle) @ np.array([np.sqrt(a**2 - b**2), 0]))
+        else: # hyperbola
+            self._center.append(self._focus - rotmat2d(angle) @ np.array([np.sqrt(a**2 + b**2), 0]))
         self._angle.append(angle)
