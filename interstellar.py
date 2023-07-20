@@ -96,7 +96,7 @@ def get_unit(limits):
 
 
 def conic_equation(x, y, x0, y0, a, b, angle):
-    # General Equation of an Ellipse with counterclockwise rotation by an angle α and (x0, y0) origin:
+    # General Equation of an Ellipse with counterclockwise rotation by an angle α and (x0, y0) focus:
     #  ((x - x0) * cos(α) + (y - y0) * sin(α))^2     ((x - x0) * sin(α) - (y - y0) * cos(α))^2
     # ------------------------------------------- + ------------------------------------------- = 1
     #                    a^2                                           b^2
@@ -107,9 +107,9 @@ def conic_equation(x, y, x0, y0, a, b, angle):
     )
 
 
-def find_conic_square_intersection(center, a, b, e, angle, limits):
-    x0 = center[0]
-    y0 = center[1]
+def find_conic_square_intersection(focus, a, b, e, angle, limits):
+    x0 = focus[0]
+    y0 = focus[1]
 
     # Calculate the coordinates of the four corners of the square
     x_min = limits[0]
@@ -294,7 +294,7 @@ def main(args, parser):
             v=np.array(custom_args.velocity)
             if hasattr(custom_args, "velocity")
             else None,
-            focus=np.array([0, 0]),  # FIXME: doesn't work if the focus is not 0,0
+            focus=np.array(custom_args.focus_coordinates),
         )
         simulator = orbitsim.OrbitSimulator(initial_conditions)
         sim_condition = threading.Condition()
@@ -425,7 +425,7 @@ def main(args, parser):
                         txt.set_fontsize(16)
 
                     intersection_points = find_conic_square_intersection(
-                        current_simulator._center[frame],
+                        current_simulator._focus,
                         current_simulator._a[frame],
                         current_simulator._b[frame],
                         current_simulator._e[frame],
@@ -651,6 +651,12 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Whether to use LaTeX for rendering. WARNING: This takes a long time",
+    )
+    output_group.add_argument(
+        "--focus-coordinates",
+        type=as_list(float, 2),
+        default=[0, 0],
+        help="The coordinates of the center body in kilograms",
     )
 
     main(parser.parse_args(), parser)
