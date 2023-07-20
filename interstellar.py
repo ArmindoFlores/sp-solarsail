@@ -359,8 +359,9 @@ def main(args, parser):
                 if not hasattr(args, "limits")
                 else args.limits[2:],
             )
+        size_factor = 1.6e7 / np.abs(custom_args.limits[1] - custom_args.limits[0])
         scatters.append(ax.scatter([], [], s=2, c=custom_args.color, linewidths=0))
-        lasts.append(ax.scatter([], [], s=80, c="k", linewidths=1))
+        lasts.append(ax.scatter([], [], s=100*size_factor, c="k", linewidths=1))
         conics.append((
             plt.plot([], [], "k--", linewidth=1)[0], 
             plt.plot([], [], "k--", linewidth=1)[0],
@@ -375,7 +376,7 @@ def main(args, parser):
             va="top",
             bbox=dict(facecolor="white", edgecolor="black", linewidth=0.75),
         )
-        foc = ax.scatter(*initial_conditions.focus, s=500, c="#FFC700", linewidths=0)
+        foc = ax.scatter(*initial_conditions.focus, s=500*size_factor, c="#FFC700", linewidths=0)
 
         ax.tick_params(axis="both", labelsize=14)
         ax.get_xaxis().get_offset_text().set_fontsize(12)
