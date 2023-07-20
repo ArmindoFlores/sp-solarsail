@@ -57,4 +57,4 @@ There is also a list of other arguments that deal with the output of this script
 * `-l`/`--limits` - The `x` and `y` limits of the display window, in the form of `--limits xmin,xmax,ymin,ymax`. 
 
 ## Running on Mac
-If a warning appears within the progress bar saying `ApplePersistenceIgnoreState: Existing state will not be touched...`, the command `defaults write org.python.python ApplePersistenceIgnoreState NO` runned on the terminal should fix it.
+If a warning appears within the progress bar saying `ApplePersistenceIgnoreState: Existing state will not be touched...`, the command `defaults write org.python.python ApplePersistenceIgnoreState NO` ran on the terminal should fix it.
