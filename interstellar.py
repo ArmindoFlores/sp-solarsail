@@ -599,7 +599,7 @@ if __name__ == "__main__":
         "-C",
         "--color",
         type=str,
-        default="r",
+        default="#0072BD",
         help="The color to plot the trajectory as. Accepts any format matplotlib accepts.",
     )
     output_group = parser.add_argument_group("Output Options")
