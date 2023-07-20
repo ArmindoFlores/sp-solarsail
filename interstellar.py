@@ -463,6 +463,10 @@ def main(args, parser):
                         current_simulator._angle[frame],
                         intersection_points,
                     )
+                    
+                    if current_simulator._e[frame] > 1:
+                        for sub_conic in conic:
+                            sub_conic.set_linestyle("-.")
 
             if hasattr(args, "snapshots") and frame in args.snapshots:
                 plt.savefig(
