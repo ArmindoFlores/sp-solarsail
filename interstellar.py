@@ -206,8 +206,8 @@ def simulate(simulator, timestep, accel, count, progress_bar, condition, args):
         with condition:
             simulator.iterate(timestep, accel)
             condition.notify_all()
-    if args.output_type != "hidden":
-        progress_bar.write("Simulation complete, continuing display")
+    #if args.output_type != "hidden":
+        #progress_bar.write("Simulation complete, continuing display")
 
 
 def main(args, parser):
@@ -524,7 +524,10 @@ def main(args, parser):
                 delimiter=",",
                 header="time,a,e,angle,center_x,center_y,velocity_x,velocity_y,position_x,position_y",
             )
-    plt.close()
+    if args.output_type == "live":
+        plt.show()
+    else:
+        plt.close()
 
 
 if __name__ == "__main__":
