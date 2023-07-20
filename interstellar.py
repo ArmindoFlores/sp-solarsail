@@ -95,31 +95,11 @@ def get_unit(limits):
     return 1, "km"
 
 
-def plot_conic(
-    line,
-    focus,
-    a,
-    e,
-    angle,
-    intersection_points,
-    n_points=100,
-    angle_start=0,
-    angle_finish=2 * np.pi,
-):
-    if len(intersection_points) > 0:
-        angle_start = cartesian2true_anomaly(a, e, intersection_points[0])
-        angle_finish = cartesian2true_anomaly(a, e, intersection_points[1])
-    if angle_finish < angle_start:
-        angle_finish, angle_start = angle_start, angle_finish
-
-    theta = np.linspace(angle_start, angle_finish, n_points)
-
-    r = orbitsim.orbit_equation(theta, a, e)
-    points = orbitsim.rotmat2d(angle) @ (r * np.array([np.cos(theta), np.sin(theta)]))
-    return line.set_data(focus[0] + points[0], focus[1] + points[1])
-
-
 def conic_equation(x, y, x0, y0, a, b, angle):
+    # General Equation of an Ellipse with counterclockwise rotation by an angle α and (x0, y0) origin:
+    #  ((x - x0) * cos(α) + (y - y0) * sin(α))^2     ((x - x0) * sin(α) - (y - y0) * cos(α))^2
+    # ------------------------------------------- + ------------------------------------------- = 1
+    #                    a^2                                           b^2
     return (
         (((x - x0) * np.cos(angle) + (y - y0) * np.sin(angle)) ** 2) / (a**2)
         + (((x - x0) * np.sin(angle) - (y - y0) * np.cos(angle)) ** 2) / (b**2)
@@ -138,7 +118,7 @@ def find_conic_square_intersection(center, a, b, e, angle, limits):
     y_max = limits[3]
 
     intersection_points = []
-    
+
     # Intersection with the top and bottom
     for y in (y_min, y_max):
         for xlim in (x_min, x_max):
@@ -161,8 +141,11 @@ def find_conic_square_intersection(center, a, b, e, angle, limits):
                 np.isclose(conic_equation(x, sol, x0, y0, a, b, angle), 0)
                 and y_min <= sol <= y_max
             ):
-                if not np.isclose(intersection_points[-1][1], sol[0]):
+                if len(intersection_points) == 0:
                     intersection_points.append([x, sol[0]])
+                else:
+                    if not np.isclose(intersection_points[-1][1], sol[0]):
+                        intersection_points.append([x, sol[0]])
 
     return intersection_points
 
@@ -175,9 +158,41 @@ def cartesian2true_anomaly(a, e, point):
 
     # Adjust theta based on the quadrant of the point
     if y < 0:
-        theta = -theta
+        theta = 2 * np.pi - theta
 
     return theta
+
+
+def plot_conic(
+    line,
+    focus,
+    a,
+    e,
+    angle,
+    intersection_points,
+    n_points=100,
+    angle_start=0,
+    angle_finish=2 * np.pi,
+):
+    if len(intersection_points) == 0:
+        theta = np.linspace(angle_start, angle_finish, n_points)
+    else:
+        angles = [cartesian2true_anomaly(a, e, point) for point in intersection_points]
+        pairs = zip(angles, intersection_points)
+        s = sorted(pairs, key=lambda t: t[0])
+
+        theta = []
+        theta.extend(np.linspace(0, s[0][0], n_points, endpoint=False).tolist())
+        for i in range(len(s)):
+            if i == len(s) - 1:
+                theta.extend(np.linspace(s[-1][0], 2 * np.pi, n_points).tolist())
+            else:
+                start, end = s[i][0], s[i + 1][0]
+                theta.extend(np.linspace(start, end, n_points, endpoint=False).tolist())
+    
+    r = orbitsim.orbit_equation(theta, a, e)
+    points = orbitsim.rotmat2d(angle) @ (r * np.array([np.cos(theta), np.sin(theta)]))
+    return line.set_data(focus[0] + points[0], focus[1] + points[1])
 
 
 def simulate(simulator, timestep, accel, count, progress_bar, condition, args):
@@ -225,8 +240,12 @@ def main(args, parser):
                 "text.latex.preamble": r"\usepackage{mathrsfs}",
             }
         )
-        
-    warnings.filterwarnings("ignore", category=RuntimeWarning, message="The iteration is not making good progress")
+
+    warnings.filterwarnings(
+        "ignore",
+        category=RuntimeWarning,
+        message="The iteration is not making good progress",
+    )
 
     args_list = []
     if hasattr(args, "from_file"):
