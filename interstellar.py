@@ -394,6 +394,7 @@ def main(args, parser):
                     updated.append(sub_conic)
                 scatter.set_zorder(3)
                 updated.append(scatter)
+            txt.set_zorder(10)
             return updated
 
         def animate(frame):
@@ -463,6 +464,12 @@ def main(args, parser):
                         current_simulator._angle[frame],
                         intersection_points,
                     )
+                    
+                    for sub_conic in conic:
+                        if current_simulator._a[frame] > 0:
+                            sub_conic.set_linestyle("--")
+                        else:
+                            sub_conic.set_linestyle("-.")
 
             if hasattr(args, "snapshots") and frame in args.snapshots:
                 plt.savefig(
