@@ -359,7 +359,7 @@ def main(args, parser):
                 if not hasattr(args, "limits")
                 else args.limits[2:],
             )
-        size_factor = 1.6e7 / np.abs(custom_args.limits[1] - custom_args.limits[0])
+        size_factor = 1 if not hasattr(args, "limits") else 1.6e7 / np.abs(custom_args.limits[1] - custom_args.limits[0])
         scatters.append(ax.scatter([], [], s=2, c=custom_args.color, linewidths=0))
         lasts.append(ax.scatter([], [], s=100*size_factor, c="k", linewidths=1))
         conics.append((
