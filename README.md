@@ -57,15 +57,45 @@ There is also a list of other arguments that deal with the output of this script
 * `-l`/`--limits` - The `x` and `y` limits of the display window, in the form of `--limits xmin,xmax,ymin,ymax`. 
 
 ## Examples
-### Example 1 - One spacecraft escaping from the solar system
+### Example 1 - Spacecraft escaping from the solar system
 
-Using `python interstellar.py -a 27820320 -e 0.9 --theta 4.084070449666731 --timestep 100 -O hidden -o examples --snapshots 825 --frames 825 --limits "-1.3e7 0.3e7 -1e7 0.6e7" --acc-profile="acceleration_profiles.escape_up(1.0, 10000, 75)" --use-latex` you get the following output (click on it).
+**Input:** `python interstellar.py -a 27820320 -e 0.9 --theta 4.084070449666731 --timestep 100 -O live -o example_1 --frames 900 --limits "-1.3e7 0.3e7 -1e7 0.6e7" --acc-profile="acceleration_profiles.escape_up(1.0, 10000, 75)" --use-latex`
 
 <p align="center">
-  <a href="https://drive.google.com/file/d/12uHrtcnR5YNKdYAF6Lo7Bt_XUL7sJFpd/view?usp=share_link">
-    <img src="/examples/example_1.gif" alt="Thumbnail" width="400">
-  </a>
+    <img src="/examples/example_1.gif" width="400">
 </p>
+
+**Legend:** In dashed and dash-dotted lines, the current elliptical and hyperbolic orbits, respectively. The trajectory from the beginning of the times is represented as a <span style="color: #0072BD;">blue</span> solid line.
+
+### Example 2 - Comparison between 3 different trajectories
+
+**Input:** `python interstellar.py --from-file comparison.txt --frames 700 --limits "-0.75e7 0.75e7 -0.4e7 1.1e7" --timestep 100 -O live -o example_2 -E --use-latex`
+
+<p align="center">
+    <img src="/examples/example_2.gif" width="400">
+</p>
+
+**Legend:** The <span style="color: #EDB120;">yellow</span> one is an elliptical trajectory where $\alpha = \frac{\pi}{2}$ and thus no pressure is felt; the <span style="color: #0072BD;">blue</span> one is our chosen trajectory for the maneuver and we can see that after just 13 hours and 53 minutes, it is already on an escape course from the solar system; the <span style="color: #D95319;">orange</span> trajectory has the sail is tilted orthogonally to the radiation source ($\alpha = 0$) since the beginning (before $\theta = 0$, the perihelion) and we can see it has not yet managed to escape the Sun's gravity well.
+
+### Example 3 - Trajectories of sails with different areas
+
+**Input:** `python interstellar.py --from-file escape.txt --timestep 100 -O live -o example_3 --frames 500 --limits "-1.3e7 0.3e7 -1e7 0.6e7" -E --use-latex`
+
+<p align="center">
+    <img src="/examples/example_3.gif" width="400">
+</p>
+
+**Legend:** <span style="color: #0072BD;">Sail 1 -- $\SI{22500}{\meter\squared}$</span>; <span style="color: #D95319;">Sail 2 -- $\SI{15625}{\meter\squared}$</span>; <span style="color: #EDB120;">Sail 3 -- $\SI{10000}{\meter\squared}$</span>; <span style="color: #7E2F8E;">Sail 4 -- $\SI{5625}{\meter\squared}$</span>; <span style="color: #77AC30;">Sail 5 -- $\SI{2500}{\meter\squared}$</span>.
+
+### Example 4 - Early Warning System
+
+**Input:** `python interstellar.py -a 74798950 --velocity 0,14.892  -e 0 --frames 789 --timestep 40000 -O live -o example_4 --limits "-1.5e8 1.5e8 -1e8 2e8" --acc-profile="acceleration_profiles.always(1, 85807.455, 150)" --use-latex`
+
+<p align="center">
+    <img src="/examples/example_4.gif" width="400">
+</p>
+
+**Legend:** Simulated orbit of an early warning system satellite at different times.
 
 ## Running on Mac
 If a warning appears within the progress bar saying `ApplePersistenceIgnoreState: Existing state will not be touched...`, the command `defaults write org.python.python ApplePersistenceIgnoreState NO` ran on the terminal should fix it.
