@@ -61,7 +61,7 @@ There is also a list of other arguments that deal with the output of this script
 
 Using `python interstellar.py -a 27820320 -e 0.9 --theta 4.084070449666731 --timestep 100 -O hidden -o examples --snapshots 825 --frames 825 --limits "-1.3e7 0.3e7 -1e7 0.6e7" --acc-profile="acceleration_profiles.escape_up(1.0, 10000, 75)" --use-latex` you get the following output.
 
-[![Thumbnail](/examples/example_1.pdf)](https://drive.google.com/file/d/12uHrtcnR5YNKdYAF6Lo7Bt_XUL7sJFpd/view?usp=share_link)
+[![Thumbnail](/examples/example_1.png)](https://drive.google.com/file/d/12uHrtcnR5YNKdYAF6Lo7Bt_XUL7sJFpd/view?usp=share_link)
 
 ## Running on Mac
 If a warning appears within the progress bar saying `ApplePersistenceIgnoreState: Existing state will not be touched...`, the command `defaults write org.python.python ApplePersistenceIgnoreState NO` ran on the terminal should fix it.
