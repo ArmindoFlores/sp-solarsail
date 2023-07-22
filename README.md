@@ -65,7 +65,7 @@ There is also a list of other arguments that deal with the output of this script
     <img src="/examples/example_1.gif" width="400">
 </p>
 
-**Legend:** In dashed and dash-dotted lines, the current elliptical and hyperbolic orbits, respectively. The trajectory from the beginning of the times is represented as a <span style="color: #0072BD;">blue</span> solid line.
+**Legend:** In dashed and dash-dotted lines, the current elliptical and hyperbolic orbits, respectively. The trajectory from the beginning of the times is represented as a ![blue](https://placehold.it/15/0072BD/000000?text=+) solid line.
 
 ### Example 2 - Comparison between 3 different trajectories
 
@@ -75,7 +75,7 @@ There is also a list of other arguments that deal with the output of this script
     <img src="/examples/example_2.gif" width="400">
 </p>
 
-**Legend:** The <span style="color: #EDB120;">yellow</span> one is an elliptical trajectory where $\alpha = \frac{\pi}{2}$ and thus no pressure is felt; the <span style="color: #0072BD;">blue</span> one is our chosen trajectory for the maneuver and we can see that after just 13 hours and 53 minutes, it is already on an escape course from the solar system; the <span style="color: #D95319;">orange</span> trajectory has the sail is tilted orthogonally to the radiation source ($\alpha = 0$) since the beginning (before $\theta = 0$, the perihelion) and we can see it has not yet managed to escape the Sun's gravity well.
+**Legend:** The ![yellow](https://placehold.it/15/EDB120/000000?text=+) one is an elliptical trajectory where $\alpha = \frac{\pi}{2}$ and thus no pressure is felt; the ![blue](https://placehold.it/15/0072BD/000000?text=+) one is our chosen trajectory for the maneuver and we can see that after just 13 hours and 53 minutes, it is already on an escape course from the solar system; the ![orange](https://placehold.it/15/D95319/000000?text=+) trajectory has the sail is tilted orthogonally to the radiation source ($\alpha = 0$) since the beginning (before $\theta = 0$, the perihelion) and we can see it has not yet managed to escape the Sun's gravity well.
 
 ### Example 3 - Trajectories of sails with different areas
 
@@ -85,7 +85,7 @@ There is also a list of other arguments that deal with the output of this script
     <img src="/examples/example_3.gif" width="400">
 </p>
 
-**Legend:** <span style="color: #0072BD;">Sail 1 -- $\SI{22500}{\meter\squared}$</span>; <span style="color: #D95319;">Sail 2 -- $\SI{15625}{\meter\squared}$</span>; <span style="color: #EDB120;">Sail 3 -- $\SI{10000}{\meter\squared}$</span>; <span style="color: #7E2F8E;">Sail 4 -- $\SI{5625}{\meter\squared}$</span>; <span style="color: #77AC30;">Sail 5 -- $\SI{2500}{\meter\squared}$</span>.
+**Legend:** ![Sail 1 - $22500 \ \mathrm{m}^2$](https://placehold.it/15/0072BD/000000?text=+); ![Sail 2 - $15625 \ \mathrm{m}^2$](https://placehold.it/15/D95319/000000?text=+); ![Sail 3 - $10000 \ \mathrm{m}^2$](https://placehold.it/15/EDB120/000000?text=+); ![Sail 4 - $5625 \ \mathrm{m}^2$](https://placehold.it/15/7E2F8E/000000?text=+); ![Sail 5 - $2500 \ \mathrm{m}^2$](https://placehold.it/15/77AC30/000000?text=+).
 
 ### Example 4 - Early Warning System
 
